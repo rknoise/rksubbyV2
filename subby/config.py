@@ -72,6 +72,7 @@ DEFAULTS = {
     "deepl_formality": "prefer_less",   # tegező ("prefer_less") vagy magázó ("prefer_more") hangnem
     "deepl_glossary": True,          # a profil glosszáriumát DeepL-glosszáriumként is használja
     "spec_translate": True,          # előre fordítás a mondat lezárása előtt (gyorsabb, kicsit több karakter)
+    "translate_fallback": True,      # ha a választott fordító nem elérhető: helyi AI, végül Google (így magyar marad)
     "ollama_url": "http://localhost:11434",
     "ollama_model": "translategemma:12b",   # vagy pl. "gemma3:12b" (az kontextust is kap)
     "context_lines": 3,              # ennyi előző mondat megy kontextusnak (DeepL / LLM)
@@ -114,7 +115,10 @@ LIVE_KEYS = {
     "style", "write_sub_files", "setup_done", "open_window", "deepl_formality", "log_enabled",
     "overlay_screen", "http_port", "video_device", "video_res", "video_fps", "monitor_audio",
     "monitor_volume", "player_topmost", "screen_overlay", "launch_player", "autostart", "ffmpeg_path",
+    # a fordító futás közben cserélhető (Engine.reload_translator)
+    "translator", "translate_fallback", "ollama_url", "ollama_model", "deepl_glossary",
 }
+TRANSLATOR_KEYS = {"translator", "translate_fallback", "ollama_url", "ollama_model", "deepl_glossary"}
 
 TRANSLATORS = ("deepl", "ollama", "google", "google_web", "none")
 _CHOICES = {

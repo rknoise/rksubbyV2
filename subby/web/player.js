@@ -171,6 +171,10 @@ function renderStatus(st) {
     dot.className = 'dot err';
     text = e.audio.error || 'Nem jön hang a forrásból';
   }
+  if (e.state === 'running' && e.translator && !(e.translator.chain || []).length) {
+    dot.className = 'dot err';
+    text = 'Nincs fordító: angol a felirat (Beállítások → Fordítás)';
+  }
   if (st.paused) text += ' · felirat kikapcsolva';
   $('chip-text').textContent = text;
   if (e.state === 'error' || e.state === 'loading' || e.state === 'stopping') wake();

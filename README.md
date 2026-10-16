@@ -79,7 +79,9 @@ RTX 3090, `distil-large-v3`, DeepL API Free, élő angol YouTube-videó az Xboxo
 2. Másold ki a kulcsot: <https://www.deepl.com/your-account/keys>. A Free kulcs vége `:fx`.
 3. Illeszd be a varázsló **Fordítás** lépésénél. A program ellenőrzi, és kiírja a havi keretet.
 
-A kulcs a felhasználói mappádba kerül (`%USERPROFILE%\.rksubby\deepl_key.txt`), **nem** a projektmappába, így nem adod tovább véletlenül. A vezérlőpulton látod, mennyi karaktert küldött el, és mennyi ment el előre fordításra. Ha fogy a keret, a Fordítás lépésnél kikapcsolhatod az előre fordítást.
+A kulcs a felhasználói mappádba kerül (`%USERPROFILE%\.rksubby\deepl_key.txt`), **nem** a projektmappába, így nem adod tovább véletlenül. Futás közben is megadhatod: a feliratozó újraindítás nélkül átáll a DeepL-re.
+
+**Kulcs nélkül is magyar a felirat:** ha a DeepL nem elérhető (nincs kulcs, elfogyott a keret, nincs kapcsolat), tartalékként a helyi AI (Ollama, ha fut), végül a Google fordít. Ez a Fordítás lépésnél kikapcsolható („Tartalék fordító”). A vezérlőpulton látod, mennyi karaktert küldött el, és mennyi ment el előre fordításra. Ha fogy a keret, a Fordítás lépésnél kikapcsolhatod az előre fordítást.
 
 ## OBS-sel (nem kötelező)
 
@@ -140,7 +142,7 @@ tests/                tesztek: python -m unittest discover -s tests
 
 ## Adatvédelem
 
-A beszédfelismerés helyben fut, csak a felismert angol szöveg megy a fordítóhoz (DeepL vagy Google). Helyi AI (Ollama) esetén semmi nem hagyja el a gépet. A `sub_log.tsv` helyben tárolja a felismert mondatokat; ha nem kell, kikapcsolhatod (Haladó beállítások), továbbadás előtt pedig hagyd ki.
+A beszédfelismerés helyben fut, csak a felismert angol szöveg megy a fordítóhoz (DeepL, tartalékként a Google). Helyi AI (Ollama) esetén semmi nem hagyja el a gépet. A `sub_log.tsv` helyben tárolja a felismert mondatokat; ha nem kell, kikapcsolhatod (Haladó beállítások), továbbadás előtt pedig hagyd ki.
 
 ## Felhasznált projektek
 

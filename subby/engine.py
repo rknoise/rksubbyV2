@@ -139,7 +139,7 @@ class Engine:
             from .audio import load_audio_file, start_wav_feeder
             from .capture import AsrFeeder, AudioMonitor, make_source
             from .subtitler import LiveSubtitler
-            from .translate import Translator, build_chain, deepl_usage, ensure_deepl_glossary
+            from .translate import Translator, deepl_usage
             from .vad import StreamingVAD
 
             asr = self._get_asr(rid, np)
@@ -151,15 +151,7 @@ class Engine:
             self.info["profile"] = profile["name"]
             self._step(f"Játékprofil: {profile['name']}", rid)
 
-            key = load_deepl_key() if cfg.translator in ("deepl", "auto") else ""
-            glossary_id = None
-            if key and cfg.deepl_glossary and profile["glossary"]:
-                try:
-                    glossary_id, msg = ensure_deepl_glossary(key, profile["id"], profile["glossary"])
-                    self._step(f"DeepL {msg}", rid)
-                except Exception as e:
-                    self._step(f"DeepL-glosszárium nélkül megy tovább ({short_err(e)})", rid)
-            chain = build_chain(cfg, profile, key, glossary_id, log=self.log)
+            chain, key = self._build_chain(profile, rid)
             translator = Translator(chain, log=self.log)
             self.info["translator"] = translator.names()
             self._step(f"Fordítók sorrendje: {translator.names()}", rid)
@@ -226,6 +218,40 @@ class Engine:
                 if rid == self._run_id:
                     self.state, self.error = "error", short_err(e)
             self.log(f"[hiba] Az indítás nem sikerült: {short_err(e)}")
+
+    def _build_chain(self, profile, rid=None):
+        """A fordítósor a beállítások, a DeepL-kulcs és a profil glosszáriuma alapján."""
+        from .translate import build_chain, ensure_deepl_glossary
+
+        cfg = self.cfg
+        key = load_deepl_key()
+        glossary_id = None
+        if key and cfg.translator in ("deepl", "auto") and cfg.deepl_glossary and profile["glossary"]:
+            try:
+                glossary_id, msg = ensure_deepl_glossary(key, profile["id"], profile["glossary"])
+                self._step(f"DeepL {msg}", rid)
+            except Exception as e:
+                self._step(f"DeepL-glosszárium nélkül megy tovább ({short_err(e)})", rid)
+        return build_chain(cfg, profile, key, glossary_id, log=self.log), key
+
+    def reload_translator(self):
+        """Új DeepL-kulcs vagy fordítóbeállítás után: a futó feliratozó fordítója újraindítás nélkül cserélődik."""
+        tr = self.translator
+        if tr is None:
+            return False
+
+        def work():
+            try:
+                chain, _key = self._build_chain(load_profile(self.cfg.profile))
+            except Exception as e:
+                self.log(f"[fordító] frissítés nem sikerült: {short_err(e)}")
+                return
+            tr.set_chain(chain)
+            self.info["translator"] = tr.names()
+            self._step(f"Fordító frissítve: {tr.names()}")
+
+        threading.Thread(target=work, daemon=True, name="fordito-frissites").start()
+        return True
 
     def _get_asr(self, rid, np):
         from .asr import WhisperASR, cuda_device_count

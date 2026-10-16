@@ -201,9 +201,7 @@
         <label class="choice"><input type="radio" name="translator" value="ollama" data-cfg="translator">
           <span><b>Helyi AI (Ollama)</b><small>Ingyenes, a gépeden fut (pl. translategemma:12b). Kell hozzá az Ollama.</small></span></label>
         <label class="choice"><input type="radio" name="translator" value="google" data-cfg="translator">
-          <span><b>Google</b><small>Ingyenes, nem hivatalos végpont: néha korlátoz, kontextust nem kap.</small></span></label>
-        <label class="choice"><input type="radio" name="translator" value="none" data-cfg="translator">
-          <span><b>Nincs fordítás</b><small>Az angol szöveg jelenik meg.</small></span></label>
+          <span><b>Google</b><small>Ingyenes, kulcs nélkül megy; nem hivatalos végpont, kontextust nem kap.</small></span></label>
       </div>
 
       <div class="card" id="s3-deepl">
@@ -236,6 +234,8 @@
             <label><input type="radio" name="formality" value="prefer_more" data-cfg="deepl_formality"><span>Magázó</span></label>
           </div>
         </div>
+        <label class="switch-row"><span>Tartalék fordító<small>Ha a választott fordító nem elérhető (nincs kulcs, elfogyott a keret, nincs net a DeepL felé), a helyi AI, végül a Google fordít, így a felirat magyar marad.</small></span>
+          <input type="checkbox" class="switch" data-cfg="translate_fallback"></label>
         <label class="switch-row"><span>Előre fordítás<small>Gyorsabb felirat: a fordítás már a mondat lezárása előtt indul. Kicsit több DeepL-karaktert használ (a vezérlőpulton látod, mennyit).</small></span>
           <input type="checkbox" class="switch" data-cfg="spec_translate"></label>
       </div>

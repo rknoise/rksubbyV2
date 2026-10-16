@@ -234,7 +234,7 @@ def make_backend(kind, cfg, profile=None, deepl_key="", ollama_model=None, gloss
     raise RuntimeError(f"ismeretlen fordító: {kind}")
 
 
-AUTO_CHAIN = ["deepl", "ollama"]   # tartalék sorrend; a Google csak kifejezett kérésre
+AUTO_CHAIN = ["deepl", "ollama", "google"]   # tartalék sorrend: a felirat akkor is magyar, ha a DeepL kiesik
 
 
 def build_chain(cfg, profile=None, deepl_key="", glossary_id=None, log=print):
@@ -243,12 +243,15 @@ def build_chain(cfg, profile=None, deepl_key="", glossary_id=None, log=print):
     if kind == "none":
         return []
     order = AUTO_CHAIN if kind == "auto" else [kind] + [k for k in AUTO_CHAIN if k != kind]
+    if not cfg.translate_fallback:
+        order = order[:1] if kind != "auto" else ["deepl", "ollama"]
     chain = []
     for k in order:
         try:
             if k == "deepl" and not deepl_key:
                 if kind in ("deepl", "auto"):
-                    log("[fordító] NINCS DeepL-kulcs (a beállító ablak Fordítás lépésénél adhatod meg)")
+                    log("[fordító] NINCS DeepL-kulcs (a beállító ablak Fordítás lépésénél adhatod meg); "
+                        "addig a tartalék fordító megy")
                 continue
             if k == "ollama":
                 running, model = ollama_status(cfg.ollama_url, cfg.ollama_model)
@@ -311,10 +314,18 @@ class Translator:
         self.cache = collections.OrderedDict()
         self.lock = threading.Lock()
         self.stats = {"requests": 0, "spec_requests": 0, "sent_chars": 0, "shown_chars": 0,
-                      "spec_hits": 0, "failures": 0, "by_backend": {}}
+                      "spec_hits": 0, "failures": 0, "by_backend": {}, "last_ok": ""}
 
     def names(self):
         return " -> ".join(name for name, _ in self.chain) or "nincs (angol szöveg jelenik meg)"
+
+    def set_chain(self, chain):
+        """Új fordítósor futás közben (pl. új DeepL-kulcs után): nem kell újraindítani a feliratozót."""
+        with self.lock:
+            self.chain = chain
+            self.down_until = {name: 0.0 for name, _ in chain}
+            self.backoff = {name: 30.0 for name, _ in chain}
+            self.cache.clear()
 
     def probe(self):
         """Indításkori próba: kiderül, melyik fordító működik, és felépül a kapcsolat."""
@@ -355,12 +366,13 @@ class Translator:
             s = dict(self.stats, by_backend=dict(self.stats["by_backend"]))
         sent, shown = s["sent_chars"], s["shown_chars"]
         s["waste_pct"] = round(max(0.0, 1 - shown / sent) * 100) if sent else 0
+        s["chain"] = [name for name, _ in self.chain]
         return s
 
     def _run(self, text, context, kind):
         t0 = time.perf_counter()
         for name, fn in self.chain:
-            if time.monotonic() < self.down_until[name]:
+            if time.monotonic() < self.down_until.get(name, 0.0):
                 continue
             try:
                 out = fn(text, list(context))
@@ -368,6 +380,7 @@ class Translator:
                     raise RuntimeError("üres válasz")
                 with self.lock:
                     self.backoff[name] = 30.0
+                    self.stats["last_ok"] = name
                     if kind != "probe":
                         self.stats["requests"] += 1
                         self.stats["spec_requests"] += kind == "spec"
@@ -377,7 +390,7 @@ class Translator:
                 return clean_spaces(out), (time.perf_counter() - t0) * 1000
             except Exception as e:
                 with self.lock:
-                    wait = self.backoff[name]
+                    wait = self.backoff.get(name, 30.0)
                     self.down_until[name] = time.monotonic() + wait
                     self.backoff[name] = min(300.0, wait * 2)
                     self.stats["failures"] += 1

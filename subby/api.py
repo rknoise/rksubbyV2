@@ -9,7 +9,8 @@ import threading
 import time
 
 from . import __version__
-from .config import (BASE_DIR, CONFIG_PATH, DEFAULTS, LIVE_KEYS, SRT_DIR, TRANSLATORS, deepl_key_source,
+from .config import (BASE_DIR, CONFIG_PATH, DEFAULTS, LIVE_KEYS, SRT_DIR, TRANSLATOR_KEYS, TRANSLATORS,
+                     deepl_key_source,
                      list_profiles, load_deepl_key, load_profile, profile_id_from_name, reset_profile,
                      save_deepl_key, save_profile, valid_profile_id)
 from .display import LOG_PATH
@@ -141,6 +142,8 @@ class Api:
             self.cfg.save()
             if _DISPLAY_KEYS & set(changed):
                 self.sink.touch()
+            if TRANSLATOR_KEYS & set(changed):
+                self.engine.reload_translator()
         running = self.engine.state in ("loading", "running")
         restart = running and any(k not in LIVE_KEYS for k in changed)
         return 200, {"changed": changed, "restart_needed": restart, "config": self.cfg.as_dict()}
@@ -159,6 +162,7 @@ class Api:
         except Exception as e:
             return 400, {"error": f"A kulcs nem működik: {short_err(e)}"}
         save_deepl_key(key)
+        self.engine.reload_translator()      # ha már fut a feliratozó, azonnal a DeepL fordít
         self._deepl_usage = {"used": used, "limit": limit, "t": time.strftime("%H:%M")}
         warn = ""
         if deepl_key_source() == "env" and os.environ.get("DEEPL_API_KEY", "").strip() != key:
@@ -216,6 +220,8 @@ class Api:
         if changed:
             self.cfg.save()
         restart = self.engine.state in ("loading", "running") and (pid == self.cfg.profile)
+        if restart:
+            self.engine.reload_translator()  # a glosszárium azonnal, a nevek a következő indításkor
         return 200, {"profile": prof, "profiles": list_profiles(), "restart_needed": restart}
 
     def p_profile_reset(self, body):
