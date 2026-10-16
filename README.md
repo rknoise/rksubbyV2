@@ -1,31 +1,57 @@
 <p align="center"><img src="Logo.jpg" alt="rksubbyV2 logó" width="240"></p>
 
-# rksubbyV2 – élő magyar felirat angol beszédhez (Xbox + OBS)
+# rksubbyV2 – élő magyar felirat angol beszédhez
 
-> **English summary:** rksubbyV2 turns English speech from a console (or any HDMI source captured in OBS) into live Hungarian subtitles. Speech is detected with Silero VAD, transcribed locally with faster-whisper on the GPU, translated with the DeepL API (with context from the previous lines), and shown in OBS through a browser source served by the script itself. Typical delay from the end of a sentence to the Hungarian subtitle: about 0.6–0.8 s on an RTX 3090.
+> **English summary:** rksubbyV2 turns English speech from a console (via a capture card such as the AVerMedia Live Gamer 4K) into live Hungarian subtitles. It shows the capture card's picture in its own always-on-top player window with the subtitles drawn on top, so OBS is no longer needed (an OBS browser source is still available). Speech is detected with Silero VAD, transcribed locally with faster-whisper on the GPU, and translated with DeepL. A one-click installer sets up Python, all packages, ffmpeg, the CUDA libraries and the speech model inside the project folder, and a setup wizard walks you through the rest. Typical delay from the end of a sentence to the Hungarian subtitle: about 0.6–0.8 s on an RTX 3090.
 
-Az Xboxon (vagy bármilyen, OBS-be behúzott HDMI-forráson) futó angol beszédet élőben magyar felirattá alakítja, és a felirat az OBS-ben a játékkép fölött jelenik meg.
+Az Xboxon (vagy bármilyen HDMI-forráson) futó angol beszédet élőben magyar felirattá alakítja. A capture kártya képét a program a **saját, mindig legfelül lévő lejátszóablakában** mutatja, rajta a felirattal. **OBS nem kell hozzá**, de ha használod, az OBS-be is beteheted a feliratot.
 
-## Mit tud
+## Újdonságok a 2.1-ben
 
-- **Mondatokat fordít, nem darabokat.** A Silero VAD 32 ms-onként figyeli, mikor kezdődik és ér véget a beszéd, így a felismerés egész mondatokat kap, és nem vág bele a szavakba.
-- **Gyors.** Már a csend elején elindul a végleges felismerés és a fordítás. Mondatvégi írásjelnél 250 ms szünet után lezár, folyamatos beszédnél pedig a kész mondatokat menet közben kiküldi, a fordításukat előre elindítva.
-- **Értelmes fordítás.** A DeepL megkapja az előző három mondatot kontextusnak, és tegező hangnemet kér, ami a játékpárbeszédekhez illik.
-- **Helyi felismerés.** A beszédfelismerés a gépeden fut (faster-whisper, `distil-large-v3`), csak a kész angol szöveg megy a DeepL-hez.
-- **Kiszűri a zajt.** A Whisper tipikus kitalált mondatai csendre vagy zajra („Thank you.”, „Subtitles by…”) nem kerülnek ki.
-- **OBS-be egyszerűen.** A script maga szolgálja ki a feliratot: a böngészőforrás URL-je `http://127.0.0.1:8765/`. Nincs fájlfigyelés és fájlzárolás.
-- **Látszik, mi történik.** Induláskor lépésenként kiírja, hol tart. Ha nincs felirat, időnként a hangszintet is jelzi, „NEM JÖN HANG” esetén nem érkezik hang a kábelről. Minden mondat bekerül a `sub_log.tsv` naplóba a felismerési és fordítási idővel, valamint a késéssel.
-- **NVIDIA nélkül is elindul.** CPU-n kisebb modellel fut, lassabban.
+- **Telepítés egy kattintással:** az `install.bat` mindent letölt és beállít (Python, csomagok, ffmpeg, NVIDIA-gyorsítás, felismerő modell), és asztali ikont készít. Előre telepített Python nem kell.
+- **Beállító varázsló:** grafikus ablak, ami lépésenként végigvezet a telepítéstől az indításig.
+- **Saját lejátszó, OBS nélkül:** a kártya képe egy mindig legfelül lévő ablakban, rajta a felirat. A hangot a program a kártyáról olvassa, és a hangszóródon is lejátssza. VB-CABLE nem kell.
+- **Átlátszó felirat-réteg:** csak a felirat, a képernyő alján, minden ablak fölött (pl. ha más programban nézed a képet).
+- **Vezérlőpult:** indítás és leállítás, hangszint, késés, legutóbbi feliratok, DeepL-keret, szünet, SRT-mentés.
+- **Játékprofilok:** nevek és helyek a jobb felismeréshez, glosszárium a fordításhoz (GTA V, GTA VI, RDR2, általános, sajátok).
+- Gyorsabb és stabilabb működés: nincs fölösleges GPU-munka, a kártya vagy a bemenet elhalásakor magától újranyit, az OBS-felirat késés nélkül, élőben frissül.
+
+## Telepítés
+
+1. Töltsd le a projektet (zöld **Code** gomb → **Download ZIP**), és csomagold ki egy olyan mappába, amelynek az útvonalában **nincs ékezet**, pl. `C:\rksubbyV2`.
+2. Futtasd az **`install.bat`**-ot. Kb. 5–15 perc, a sebesség az internettől függ. NVIDIA-kártyánál kb. 4 GB-ot tölt le (csomagok, CUDA-könyvtárak, modell), anélkül kevesebbet.
+3. Indítsd az asztali **rksubby** ikonnal. Az első indításkor a beállító varázsló nyílik meg.
+
+Minden a projektmappába kerül (`.venv`, `.tools`), a felismerő modell a Hugging Face gyorsítótárába. **Eltávolítás:** töröld a mappát és az asztali ikont.
+
+### A varázsló lépései
+
+1. **Telepítés:** ellenőrzi, megvan-e minden (Python, csomagok, NVIDIA, modell, capture kártya, ffmpeg, Edge). Ami hiányzik, egy gombbal pótolható.
+2. **Forrás:** kiválasztod a képforrást (pl. `AVerMedia HD Capture GC573 1`) élő előnézettel. A hangforrás magától a kártya hangjára áll, hangszintjelzővel. Itt kapcsolhatod be, hogy a hang a gépeden is szóljon.
+3. **Fordítás:** DeepL-kulcs (beillesztés, ellenőrzés, havi keret), tegező vagy magázó hangnem, próbafordítás. Választható helyi AI (Ollama) vagy Google is.
+4. **Játékprofil:** nevek és helyek, glosszárium (angol → magyar).
+5. **Megjelenítés:** lejátszó (mindig legfelül), átlátszó felirat-réteg, OBS-cím; betűméret, szín, háttérdoboz, szélesség, élő előnézettel.
+6. **Próba és indítás:** próba egy angol mintafelvétellel, aztán a lejátszó és a feliratozás indítása.
+
+A beállítás után az asztali ikon **rögtön a lejátszót nyitja meg, és a feliratozás magától indul**. A beállításokhoz a lejátszó fogaskerék-gombjával jutsz vissza.
+
+## A lejátszó
+
+- A kép a kártyáról közvetlenül jön (1080p60 vagy a választott felbontás), a felirat a kép alján jelenik meg.
+- A vezérlősáv egérmozdításra jelenik meg: indítás/leállítás, hang és hangerő, felirat be/ki, **mindig legfelül**, teljes képernyő, beállítások.
+- Billentyűk: **F** vagy dupla kattintás = teljes képernyő, **M** = hang, **S** = felirat, **T** = mindig legfelül, **Szóköz** = feliratozás indítása vagy leállítása.
 
 ## Hogyan működik
 
 ```
-Xbox -> capture kártya -> OBS --(hangfigyelés)--> VB-CABLE --> rksubby.py
-                                                                 | Silero VAD  -> mondatok
-                                                                 | faster-whisper (GPU) -> angol szöveg
-                                                                 | DeepL -> magyar szöveg
-OBS böngészőforrás  <---  http://127.0.0.1:8765/  <--------------+
+Xbox -> capture kártya --kép--> lejátszóablak (Edge alkalmazásablak, mindig legfelül) <-- felirat
+                       --hang--> ffmpeg -> Silero VAD -> faster-whisper (GPU) -> DeepL -> felirat
+                                       \-> hangszóró
 ```
+
+A program egy helyi webszervert futtat (`http://127.0.0.1:8765/`). A beállító ablak, a lejátszó és az OBS-felirat is innen kapja az adatokat. A szerver csak a saját gépről érhető el, és más weboldalakról érkező kéréseket nem fogad el.
+
+Az **AVerMedia Live Gamer 4K (GC573)** hangja nem külön Windows-hangeszköz, hanem a kártya DirectShow-eszközén jön a képpel együtt. Ezt az ffmpeg olvassa ki, a telepítő ezt is felteszi. A kártyát a lejátszó és a feliratozó egyszerre használja. USB-s kártyáknál a hang gyakran külön Windows-hangbemenet, azt is választhatod.
 
 ## Mért teljesítmény
 
@@ -36,96 +62,89 @@ RTX 3090, `distil-large-v3`, DeepL API Free, élő angol YouTube-videó az Xboxo
 | Mondat vége → magyar felirat (medián, 143 mondat) | **~0,8 mp** |
 | Szünettel záruló mondatoknál | 0,55–0,7 mp |
 | Gyors, szünet nélküli beszédnél | 1,5–2,5 mp |
-| Beszédfelismerés mondatonként | ~150–230 ms |
+| Beszédfelismerés mondatonként | ~110–230 ms |
 | DeepL-fordítás mondatonként | ~300 ms |
-| Indulás (meleg / hidegindítás) | ~7–9 mp / ~40 mp |
+| Indulás (meleg / hidegindítás) | ~4–9 mp / ~40 mp |
 
 ## Követelmények
 
-- Windows 10 vagy 11
-- Python 3.10–3.12 (64 bites)
-- NVIDIA videokártya, ajánlott (6+ GB VRAM). Nélküle is elindul CPU-n, de lassabb és pontatlanabb.
-- OBS Studio 30 vagy újabb
-- [VB-Audio Virtual Cable](https://vb-audio.com/Cable/) (ingyenes)
-- DeepL API Free kulcs (ingyenes, havi karakterkerettel; a regisztrációnál a DeepL bankkártyás azonosítást kér)
-
-## Telepítés
-
-1. Telepítsd a Pythont (python.org vagy Microsoft Store). A python.org-os telepítőnél pipáld be az „Add Python to PATH” opciót.
-2. Töltsd le a projektet (a GitHub-oldalon a zöld **Code** gomb → **Download ZIP**), és csomagold ki egy olyan helyre, amelynek az útvonalában **nincs ékezet**, például `E:\rksubbyV2`.
-3. Futtasd az `install.bat`-ot. Telepíti a csomagokat, és megkérdezi, van-e NVIDIA kártyád.
-   Kézzel: `python -m pip install -r requirements.txt`, NVIDIA-hoz még `python -m pip install -r requirements-gpu.txt`.
-4. Telepítsd a VB-Audio Virtual Cable-t, aztán indítsd újra a gépet.
-
-Az első indításkor a script letölti a felismerő modellt (kb. 1,5 GB, egyszeri).
-
-## OBS beállítása
-
-1. **Hova menjen a hang:** Beállítások → Hang → Speciális → **Hangfigyelő eszköz: CABLE Input (VB-Audio Virtual Cable)**.
-2. **A játék hangja:** a Hangkeverőben a capture-forrás melletti ⋮ → Speciális hangtulajdonságok. A capture-forrásnál a Hangfigyelés legyen **„Figyelés és kimenet”**, az **Asztali hangnál „Figyelés kikapcsolása”**, különben visszhang és hurok keletkezhet.
-3. **A felirat:** adj hozzá egy új **Böngészőforrást**, a „Helyi fájl” legyen **kikapcsolva**, a **Webcím `http://127.0.0.1:8765/`**, a méret 1920×1080. A forrás a lista tetején legyen, a játékkép fölött.
-
-A felirat csak akkor látszik, ha fut a script.
-
-Ha a játék hangját a gépen is hallani szeretnéd: Windows Hang (`mmsys.cpl`) → Felvétel → CABLE Output → Tulajdonságok → Figyelés → „Az eszköz figyelése” → válaszd a hangszóródat.
+- Windows 10 vagy 11, Microsoft Edge (a Windows része)
+- NVIDIA videokártya, ajánlott (6+ GB VRAM). Nélküle CPU-n is elindul, de lassabb és pontatlanabb.
+- Capture kártya (pl. AVerMedia Live Gamer 4K), vagy OBS + [VB-Audio Virtual Cable](https://vb-audio.com/Cable/)
+- DeepL API Free kulcs (ingyenes, havi 500 000 karakter; a regisztrációnál a DeepL bankkártyás azonosítást kér)
 
 ## DeepL-kulcs
 
 1. Regisztrálj a DeepL API Free csomagra: <https://www.deepl.com/pro-api>.
 2. Másold ki a kulcsot: <https://www.deepl.com/your-account/keys>. A Free kulcs vége `:fx`.
-3. Indítsd el a scriptet. Az első indításkor megtalálja a kulcsot a vágólapon, és csak egy Entert kér. Később így cserélheted: `python rksubby.py --deepl-key`.
+3. Illeszd be a varázsló **Fordítás** lépésénél. A program ellenőrzi, és kiírja a havi keretet.
 
-A kulcs a felhasználói mappádba kerül (`%USERPROFILE%\.rksubby\deepl_key.txt`), **nem** a projektmappába, így nem adod tovább véletlenül.
+A kulcs a felhasználói mappádba kerül (`%USERPROFILE%\.rksubby\deepl_key.txt`), **nem** a projektmappába, így nem adod tovább véletlenül. A vezérlőpulton látod, mennyi karaktert küldött el, és mennyi ment el előre fordításra. Ha fogy a keret, a Fordítás lépésnél kikapcsolhatod az előre fordítást.
 
-## Indítás
+## OBS-sel (nem kötelező)
 
-- `start.bat`, vagy parancssorból: `python rksubby.py`
-- Próba Xbox nélkül, egy rövid angol felvétellel: `python rksubby.py --wav teszt_angol.wav`
-- Csak a fordító tesztje (pár másodperc): `python rksubby.py --test-translate`
+Ha az OBS-ben nézed vagy rögzíted a játékot:
 
-A konzolon minden mondat megjelenik angolul és magyarul, a felismerési és fordítási idővel és a késéssel együtt. Kilépés: Ctrl+C.
+1. **Hang:** OBS Beállítások → Hang → Speciális → **Hangfigyelő eszköz: CABLE Input (VB-Audio Virtual Cable)**. A capture-forrásnál a Hangfigyelés legyen „Figyelés és kimenet”, az Asztali hangnál „Figyelés kikapcsolása”. A varázslóban a hangforrás: `CABLE Output`.
+2. **Felirat:** új **Böngészőforrás**, a „Helyi fájl” kikapcsolva, a **Webcím `http://127.0.0.1:8765/`**, a méret 1920×1080, a forrás a lista tetején.
 
-## Beállítások
+A feliratokat SRT-fájlba is mentheted a felvételhez (Vezérlőpult → Feliratok mentése SRT-be). A fájlok a `feliratok` mappába kerülnek.
 
-A beállítások az `rksubby.py` elején vannak, magyarázattal. A fontosabbak:
+## Parancssor (haladóknak)
 
-| Beállítás | Mit csinál |
+| Parancs | Mit csinál |
 |---|---|
-| `GAME_HOTWORDS` | Nevek, helyek, amiket a felismerés jobban eltalál (pl. GTA VI: `"Jason, Lucia, Vice City, Leonida"`) |
-| `MODEL_NAME` | Felismerő modell (alap: `distil-large-v3`; alternatíva: `large-v3-turbo`) |
-| `END_SILENCE_MS`, `SPECULATIVE_SILENCE_MS` | Mennyi csend után zárja le a mondatot (450 ms, írásjelnél 250 ms) |
-| `MAX_LINES`, `SUB_MIN_S`, `SUB_MAX_S` | Hány sor látszik egyszerre, és meddig marad kint egy felirat |
-| `SHOW_PARTIAL_EN` | Beszéd közben szürke angol előnézet (alapból kikapcsolva) |
-| `SHOW_EN_UNDER_HU` | A magyar alatt kicsiben az angol eredeti is |
-| `DEEPL_FORMALITY` | Tegező (`prefer_less`) vagy magázó (`prefer_more`) hangnem |
-| `OBS_HTTP_PORT` | A felirat-webszerver portja (alap: 8765) |
+| `start.bat` | ugyanaz, mint az ikon, de látszik a konzol (hibakereséshez) |
+| `start.bat --setup` | a beállító ablakkal indul |
+| `start.bat --cli` | ablak nélkül, konzolban (a régi működés) |
+| `start.bat --cli --card "AVerMedia HD Capture GC573 1"` | konzolban, a kártya hangjával |
+| `start.bat --wav teszt_angol.wav` | próba a mintafelvétellel, Xbox nélkül |
+| `start.bat --list-devices` | hangbemenetek és capture kártyák listája |
+| `start.bat --test-translate` | a fordítók gyors tesztje |
+| `start.bat --deepl-key` | DeepL-kulcs beállítása a konzolon |
 
-A felirat kinézete (sárga, 32 px, fekete körvonal) a scriptben az `OVERLAY_HTML` résznél állítható, vagy az OBS böngészőforrásának „Egyéni CSS” mezőjében.
+A beállítások helye: `%USERPROFILE%\.rksubby\config.json`. A varázslóban és a **Haladó beállítások** oldalon állíthatók, egy új verzió letöltésekor nem vesznek el. Ikonnal indítva a program kimenete a `%USERPROFILE%\.rksubby\rksubby.log` fájlba kerül. Ha minden ablakát bezárod, másfél perc múlva magától kilép.
 
 ## Hibaelhárítás
 
-**„NEM JÖN HANG” a konzolon.** Nem érkezik hang a CABLE Outputról.
-- Ellenőrizd az OBS-beállítás 1. és 2. lépését.
-- **Fontos:** Windows-frissítés vagy illesztőprogram-csere után az OBS megtarthat egy már nem létező eszközazonosítót. Ilyenkor a beállításban továbbra is „CABLE Input” látszik, de nem megy hang. Az OBS naplójában ilyenkor ez áll: `audio_monitor_init_wasapi: Failed to get device`. Megoldás: a Hangfigyelő eszköznél válassz ki egy másikat, nyomd meg az Alkalmaz gombot, aztán válaszd vissza a CABLE Inputot, és megint Alkalmaz.
-- Ellenőrzés: Windows Hang (`mmsys.cpl`) → Felvétel. A CABLE Output szintjelzőjének mozognia kell, miközben szól a játék.
+**Nincs kép a lejátszóban.** Be van kapcsolva a konzol? Ha a kártya saját programja (AVerMedia RECentral) vagy az OBS kizárólagosan használja a kártyát, zárd be. A varázsló **Forrás** lépésénél nézd meg az előnézetet.
 
-**A felirat nem látszik az OBS-ben, pedig a konzolon megjelenik.**
-- A böngészőforrás URL-je `http://127.0.0.1:8765/` legyen, a „Helyi fájl” kikapcsolva.
-- Ha az OBS naplójában `CEF failed to initialize` áll, zárd be teljesen az OBS-t, és indítsd újra. Soha ne fusson egyszerre két OBS.
+**„NEM JÖN HANG”.** Capture kártyánál: szól a játék vagy videó? A varázsló **Forrás** lépésén a hangszintjelzőnek mozognia kell. OBS + VB-CABLE esetén a Windows-frissítés után az OBS megtarthat egy már nem létező eszközt: a Hangfigyelő eszköznél válassz ki egy másikat, Alkalmaz, aztán vissza a CABLE Inputot, és megint Alkalmaz.
 
-**„Az OBS-felirat webszervere nem indult (port 8765)”.** Valami más használja a portot, vagy már fut egy példány a scriptből. Állíts be másik `OBS_HTTP_PORT`-ot, és írd át az OBS-ben is a webcímet.
+**„A GPU-s betöltés nem sikerült”.** Futtasd újra az `install.bat`-ot, vagy a varázsló **Telepítés** lépésénél nyomd meg az „NVIDIA-gyorsítás telepítése” gombot.
 
-**DeepL-hibák.** 403: rossz a kulcs, futtasd a `python rksubby.py --deepl-key` parancsot. 456: elfogyott a havi keret, ilyenkor a hónap végéig angol felirat jelenik meg.
+**DeepL-hibák.** 403: rossz a kulcs, add meg újra a Fordítás lépésnél. 456: elfogyott a havi keret, ilyenkor a hónap végéig angol felirat jelenik meg (vagy a helyi AI fordít, ha fut az Ollama).
 
-**„A GPU-s betöltés nem sikerült … cublas”.** Hiányoznak a CUDA-könyvtárak: `python -m pip install -r requirements-gpu.txt`.
+**A 8765-ös port foglalt.** Fut még egy példány? Ha igen, az ikon az ő ablakát nyitja meg. Különben állíts be másik portot (Haladó beállítások), és írd át az OBS-ben is a címet.
+
+## Felépítés
+
+```
+rksubby.py            indító
+subby/                a program
+  cli.py              indítás, parancssor
+  engine.py           a feliratozó motorja (modell, fordító, hangforrás indítása és leállítása)
+  subtitler.py        mondatdarabolás, felismerés, korai lezárás
+  capture.py          capture kártya hangja (ffmpeg), hangszóró, hangszintmérő
+  audio.py            Windows-hangbemenetek, WAV
+  translate.py        DeepL (glosszáriummal), Ollama, Google
+  display.py          feliratállapot, napló, SRT
+  server.py, api.py   helyi webszerver és a felület hívásai
+  windows.py          ablakok (Edge-alkalmazásablak, mindig legfelül)
+  overlay_qt.py       átlátszó felirat-réteg (külön folyamat)
+  web/                beállító varázsló, vezérlőpult, lejátszó, OBS-felirat
+profiles/             beépített játékprofilok
+tools/install.ps1     a telepítő
+tests/                tesztek: python -m unittest discover -s tests
+```
 
 ## Adatvédelem
 
-A beszédfelismerés helyben fut, csak a felismert angol szöveg megy a DeepL-hez. A `sub_log.tsv` helyben tárolja a felismert mondatokat; ha nem kell, törölheted, továbbadás előtt pedig hagyd ki.
+A beszédfelismerés helyben fut, csak a felismert angol szöveg megy a fordítóhoz (DeepL vagy Google). Helyi AI (Ollama) esetén semmi nem hagyja el a gépet. A `sub_log.tsv` helyben tárolja a felismert mondatokat; ha nem kell, kikapcsolhatod (Haladó beállítások), továbbadás előtt pedig hagyd ki.
 
 ## Felhasznált projektek
 
-[faster-whisper](https://github.com/SYSTRAN/faster-whisper) (MIT), [Whisper](https://github.com/openai/whisper) és [distil-whisper](https://github.com/huggingface/distil-whisper) modellek, [Silero VAD](https://github.com/snakers4/silero-vad) (MIT), [DeepL API](https://www.deepl.com/pro-api), [OBS Studio](https://obsproject.com), [VB-Audio Virtual Cable](https://vb-audio.com/Cable/).
+[faster-whisper](https://github.com/SYSTRAN/faster-whisper) (MIT), [Whisper](https://github.com/openai/whisper) és [distil-whisper](https://github.com/huggingface/distil-whisper) modellek, [Silero VAD](https://github.com/snakers4/silero-vad) (MIT), [DeepL API](https://www.deepl.com/pro-api), [FFmpeg](https://ffmpeg.org) ([imageio-ffmpeg](https://github.com/imageio/imageio-ffmpeg)), [PyQt5](https://riverbankcomputing.com/software/pyqt/) (GPL), [uv](https://github.com/astral-sh/uv), [OBS Studio](https://obsproject.com), [VB-Audio Virtual Cable](https://vb-audio.com/Cable/).
 A `teszt_angol.wav` J. F. Kennedy 1961-es beiktatási beszédéből származik (közkincs).
 
 Fejlesztés: RKnoise, Claude (Anthropic) segítségével.

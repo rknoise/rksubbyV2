@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rksubby lejátszó</title>
+<link rel="icon" href="/static/logo-64.png">
+<style>
+  :root {
+    --font: Arial, sans-serif; --size: 32px; --color: #ffff00; --en: #dddddd;
+    --maxw: 1300px; --bottom: 40px; --box: transparent; --k: 1;
+    --panel: rgba(8, 18, 32, .82); --line: rgba(120, 160, 210, .28); --text: #e6eef8; --muted: #9fb3cb;
+    --accent: #38bdf8; --ok: #4ade80; --err: #f87171; --warn: #fbbf24;
+    color-scheme: dark;
+  }
+  html, body { margin: 0; height: 100%; background: #000; color: var(--text); overflow: hidden;
+    font: 14px/1.4 "Segoe UI", system-ui, sans-serif; user-select: none; }
+  body.idle, body.idle * { cursor: none !important; }
+  video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+  #stage { position: absolute; pointer-events: none; }
+  #sub {
+    position: absolute; left: 0; right: 0; bottom: calc(var(--bottom) * var(--k));
+    display: flex; flex-direction: column; align-items: center; gap: calc(6px * var(--k));
+    font-family: var(--font); text-align: center;
+  }
+  .line, .partial {
+    max-width: calc(var(--maxw) * var(--k)); box-sizing: border-box; padding: 2px calc(18px * var(--k));
+    border-radius: calc(10px * var(--k));
+    text-shadow: 2px 2px 4px #000, -2px -2px 4px #000, 2px -2px 4px #000, -2px 2px 4px #000;
+  }
+  .line { background: var(--box); animation: in .16s ease-out; }
+  .hu { color: var(--color); font-size: calc(var(--size) * var(--k)); font-weight: bold; line-height: 1.25; }
+  .en { color: var(--en); font-size: calc(var(--size) * .62 * var(--k)); font-style: italic; line-height: 1.3; }
+  .partial { color: #bbbbbb; font-size: calc(var(--size) * .7 * var(--k)); font-style: italic; }
+  @keyframes in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  #msg { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; pointer-events: none; }
+  #msg > div { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px 28px;
+    max-width: 520px; pointer-events: auto; }
+  #msg h2 { margin: 0 0 6px; font-size: 19px; }
+  #msg p { margin: 0 0 14px; color: var(--muted); }
+
+  .bar { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; align-items: center;
+    gap: 6px; padding: 8px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line);
+    backdrop-filter: blur(8px); transition: opacity .25s, transform .25s; white-space: nowrap; }
+  body.idle .bar, body.idle .chip { opacity: 0; pointer-events: none; }
+  .chip { position: absolute; top: 14px; left: 14px; display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+    border-radius: 999px; background: var(--panel); border: 1px solid var(--line); font-size: 13px; transition: opacity .25s; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #5b6b80; flex: none; }
+  .dot.run { background: var(--ok); box-shadow: 0 0 0 4px rgba(74, 222, 128, .2); }
+  .dot.load { background: var(--accent); animation: pulse 1s infinite; }
+  .dot.err { background: var(--err); }
+  @keyframes pulse { 50% { opacity: .4; } }
+  button { font: inherit; color: var(--text); background: transparent; border: 1px solid transparent; border-radius: 10px;
+    padding: 7px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+  button:hover { background: rgba(255, 255, 255, .08); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button.on { background: rgba(56, 189, 248, .18); border-color: rgba(56, 189, 248, .5); }
+  button.primary { background: linear-gradient(90deg, #38bdf8, #4ade80); color: #04121f; font-weight: 700; }
+  button.stop { background: rgba(248, 113, 113, .18); border-color: rgba(248, 113, 113, .5); }
+  .sep { width: 1px; height: 24px; background: var(--line); margin: 0 4px; }
+  input[type=range] { width: 96px; accent-color: var(--accent); }
+  svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .k { color: var(--muted); font-size: 11px; }
+</style>
+</head>
+<body>
+  <video id="video" autoplay playsinline muted></video>
+  <div id="stage"><div id="sub"></div></div>
+
+  <div class="chip" id="chip"><i class="dot" id="chip-dot"></i><span id="chip-text">Kapcsolódás…</span></div>
+
+  <div id="msg" hidden><div>
+    <h2 id="msg-title"></h2>
+    <p id="msg-text"></p>
+    <button class="primary" id="msg-btn" type="button">Beállítások megnyitása</button>
+  </div></div>
+
+  <div class="bar" id="bar" role="toolbar" aria-label="Lejátszó">
+    <button id="b-run" type="button" title="Feliratozás indítása / leállítása (Szóköz)">Indítás</button>
+    <span class="sep"></span>
+    <button id="b-mute" type="button" title="Hang a hangszórón (M)" aria-label="Hang">
+      <svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path id="wave" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+    </button>
+    <input type="range" id="b-vol" min="0" max="1.5" step="0.05" aria-label="Hangerő">
+    <span class="sep"></span>
+    <button id="b-cc" type="button" title="Felirat be/ki (S)">CC</button>
+    <button id="b-top" type="button" title="Mindig legfelül (T)">
+      <svg viewBox="0 0 24 24"><path d="M12 17v5M5 17h14l-2-5V4H7v8z"/></svg>Mindig felül</button>
+    <button id="b-fs" type="button" title="Teljes képernyő (F vagy dupla kattintás)" aria-label="Teljes képernyő">
+      <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <span class="sep"></span>
+    <button id="b-set" type="button" title="Beállítások" aria-label="Beállítások">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </div>
+
+  <script src="/static/subs.js"></script>
+  <script src="/static/player.js"></script>
+</body>
+</html>

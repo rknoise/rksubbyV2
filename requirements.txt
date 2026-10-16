@@ -1,9 +1,10 @@
-# rksubbyV2 - alapcsomagok
+# rksubbyV2 - csomagok (az install.bat mindet felteszi, a saját .venv környezetbe)
 faster-whisper>=1.2.1
 sounddevice>=0.5
 numpy
 requests
+imageio-ffmpeg>=0.6     # ffmpeg: a capture kártya (pl. AVerMedia GC573) hangja a képpel együtt érkezik
+PyQt5>=5.15             # az átlátszó felirat-réteg (külön folyamatban fut)
 
-# Opcionalis:
-#   PyQt5            -> beepitett felirat-ablak (--overlay), ha nem OBS-t hasznalsz
-#   deep-translator  -> regi Google-fordito (--translator google_web)
+# Opcionális:
+#   deep-translator  -> régi Google-fordító (--translator google_web)
