@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rksubby</title>
+<link rel="icon" href="/static/logo-64.png">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <img src="/static/logo-128.png" alt="" width="44" height="44">
+      <div><b>rksubby</b><span id="ver">v2</span></div>
+    </div>
+    <nav id="nav" aria-label="Lépések">
+      <a href="#dash" data-view="dash" class="nav-item"><span class="ico">◉</span>Vezérlőpult</a>
+      <div class="nav-title">Beállítás lépésenként</div>
+      <a href="#s1" data-view="s1" class="nav-item step"><i class="dot" id="dot-s1"></i>1. Telepítés</a>
+      <a href="#s2" data-view="s2" class="nav-item step"><i class="dot" id="dot-s2"></i>2. Forrás: kép és hang</a>
+      <a href="#s3" data-view="s3" class="nav-item step"><i class="dot" id="dot-s3"></i>3. Fordítás</a>
+      <a href="#s4" data-view="s4" class="nav-item step"><i class="dot" id="dot-s4"></i>4. Játékprofil</a>
+      <a href="#s5" data-view="s5" class="nav-item step"><i class="dot" id="dot-s5"></i>5. Megjelenítés</a>
+      <a href="#s6" data-view="s6" class="nav-item step"><i class="dot" id="dot-s6"></i>6. Próba és indítás</a>
+      <div class="nav-title">Egyéb</div>
+      <a href="#adv" data-view="adv" class="nav-item"><span class="ico">⚙</span>Haladó beállítások</a>
+    </nav>
+    <div class="side-foot">
+      <div class="pill" id="pill"><i class="dot"></i><span>Kapcsolódás…</span></div>
+      <button class="btn ghost small" id="quit" type="button">Kilépés a programból</button>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div class="offline" id="offline" hidden>Nem érem el a programot. Fut még a konzolablak? Újrapróbálom…</div>
+
+    <!-- ============================================================ VEZÉRLŐPULT -->
+    <section class="view" id="view-dash" hidden>
+      <header class="vh">
+        <h1>Vezérlőpult</h1>
+        <p class="sub">A feliratozó állapota, a legutóbbi feliratok és a gyors kapcsolók.</p>
+      </header>
+      <div class="card hero">
+        <div class="hero-state">
+          <span class="state-dot" id="d-dot"></span>
+          <div>
+            <div class="state-title" id="d-state">Áll</div>
+            <div class="muted" id="d-sub">Indítsd el, amikor szól a játék.</div>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <button class="btn ghost" id="d-player" type="button">Lejátszó megnyitása</button>
+          <button class="btn primary big" id="d-start" type="button">Indítás</button>
+        </div>
+      </div>
+
+      <div class="tiles">
+        <div class="tile"><div class="tile-l">Késés a mondat végétől</div><div class="tile-v" id="t-lat">–</div><div class="tile-s">medián, utolsó 30 mondat</div></div>
+        <div class="tile"><div class="tile-l">Felismerés</div><div class="tile-v" id="t-asr">–</div><div class="tile-s" id="t-model">–</div></div>
+        <div class="tile"><div class="tile-l">Fordítás</div><div class="tile-v" id="t-tr">–</div><div class="tile-s" id="t-trname">–</div></div>
+        <div class="tile"><div class="tile-l">DeepL havi keret</div><div class="tile-v" id="t-deepl">–</div><div class="tile-s" id="t-deepl-s">–</div></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h2>Hang</h2>
+          <div class="meter" id="d-meter"><div class="meter-cover"></div><div class="meter-peak"></div></div>
+          <div class="meter-scale"><span>-60 dB</span><span>-30</span><span>0</span></div>
+          <p class="status-line" id="d-audio">A feliratozó nem fut.</p>
+          <p class="muted small" id="d-input"></p>
+        </div>
+        <div class="card">
+          <h2>Kapcsolók</h2>
+          <label class="switch-row"><span>Felirat szüneteltetése<small>A felismerés megy tovább, de felirat nem jelenik meg.</small></span>
+            <input type="checkbox" class="switch" id="d-pause"></label>
+          <label class="switch-row"><span>Angol szöveg is a magyar alatt</span>
+            <input type="checkbox" class="switch" data-cfg="show_en_under_hu"></label>
+          <label class="switch-row"><span>Átlátszó felirat-réteg a képernyőn</span>
+            <input type="checkbox" class="switch" data-cfg="screen_overlay"></label>
+          <label class="switch-row"><span>Hang lejátszása ezen a gépen</span>
+            <input type="checkbox" class="switch" data-cfg="monitor_audio"></label>
+          <label class="switch-row"><span>Feliratok mentése SRT-be<small id="d-srt-path">Pl. az OBS-felvételhez: a mentés indításától számol.</small></span>
+            <input type="checkbox" class="switch" id="d-srt"></label>
+          <div class="btn-row">
+            <button class="btn ghost small" id="d-clear" type="button">Felirat törlése</button>
+            <button class="btn ghost small" data-open="srt" type="button">SRT-mappa</button>
+            <button class="btn ghost small" data-open="log" type="button">Napló (sub_log.tsv)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="d-steps-card" hidden>
+        <h2>Indulás</h2>
+        <ol class="steps" id="d-steps"></ol>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Legutóbbi feliratok</h2><span class="muted small" id="d-count"></span></div>
+        <ul class="hist" id="d-hist"><li class="empty">Még nincs felirat.</li></ul>
+      </div>
+
+      <div class="card">
+        <h2>Fordítási statisztika</h2>
+        <p class="muted" id="d-trstats">Az indítás után itt látod, hány karaktert küldött el a fordítónak, és mennyi ment el előre fordításra (ami nem került ki).</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ 1. TELEPÍTÉS -->
+    <section class="view" id="view-s1" hidden>
+      <header class="vh">
+        <div class="kicker">1 / 6</div>
+        <h1>Telepítés</h1>
+        <p class="sub">Megnézem, megvan-e minden, ami a feliratozáshoz kell. Ami hiányzik, azt innen egy kattintással telepítheted.</p>
+      </header>
+      <div class="card">
+        <div class="card-head"><h2>Rendszer</h2><button class="btn ghost small" id="s1-recheck" type="button">Újraellenőrzés</button></div>
+        <ul class="checks" id="s1-checks"><li class="loading">Ellenőrzés… (az első alkalommal pár másodperc)</li></ul>
+        <div class="btn-row" id="s1-actions"></div>
+      </div>
+      <div class="card" id="s1-log-card" hidden>
+        <div class="card-head"><h2>Telepítés</h2><span class="muted small" id="s1-log-state"></span></div>
+        <pre class="log" id="s1-log"></pre>
+      </div>
+      <footer class="vf"><span></span><a class="btn primary" href="#s2">Tovább: forrás</a></footer>
+    </section>
+
+    <!-- ============================================================ 2. FORRÁS -->
+    <section class="view" id="view-s2" hidden>
+      <header class="vh">
+        <div class="kicker">2 / 6</div>
+        <h1>Forrás: kép és hang</h1>
+        <p class="sub">Válaszd ki a capture kártyát (pl. AVerMedia). A képe a lejátszóablakba kerül, a hangja a felismerőhöz és a hangszóródra. OBS nem kell hozzá.</p>
+      </header>
+      <div class="card">
+        <div class="card-head"><h2>Kép</h2><button class="btn ghost small" id="s2-vrefresh" type="button">Frissítés</button></div>
+        <div class="grid2 tight">
+          <label class="field"><span>Képforrás</span><select id="s2-video"></select></label>
+          <label class="field"><span>Felbontás</span>
+            <select id="s2-res">
+              <option value="1920x1080@60">1080p, 60 fps (ajánlott)</option>
+              <option value="1280x720@60">720p, 60 fps (gyengébb gépre)</option>
+              <option value="2560x1440@60">1440p, 60 fps</option>
+              <option value="3840x2160@30">4K, 30 fps</option>
+              <option value="1920x1080@30">1080p, 30 fps</option>
+            </select></label>
+        </div>
+        <div class="vbox" id="s2-vbox"><video id="s2-preview" autoplay playsinline muted></video><div class="vmsg" id="s2-vmsg">Kép betöltése…</div></div>
+        <p class="muted small" id="s2-vinfo"></p>
+      </div>
+      <div class="card">
+        <h2>Hang</h2>
+        <label class="field"><span>Hangforrás</span>
+          <div class="inline">
+            <select id="s2-audio"></select>
+            <button class="btn ghost small" id="s2-refresh" type="button">Frissítés</button>
+          </div>
+        </label>
+        <div class="meter big" id="s2-meter"><div class="meter-cover"></div><div class="meter-peak"></div></div>
+        <div class="meter-scale"><span>-60 dB</span><span>-30</span><span>0</span></div>
+        <p class="status-line" id="s2-status">Válassz hangforrást.</p>
+        <label class="switch-row"><span>Hang lejátszása ezen a gépen<small>A kártya hangja a hangszóródon vagy fejhallgatódon is szól. Kapcsold ki, ha a tévén hallgatod.</small></span>
+          <input type="checkbox" class="switch" data-cfg="monitor_audio"></label>
+        <div class="grid2 tight">
+          <label class="field"><span>Hangerő <output id="o-vol"></output></span>
+            <input type="range" min="0" max="1.5" step="0.05" data-cfg="monitor_volume" data-out="o-vol" data-pct="1"></label>
+          <label class="field"><span>Kimenet</span><select id="s2-out"></select></label>
+        </div>
+      </div>
+      <details class="card">
+        <summary><h2>Ha nincs kép vagy hang</h2></summary>
+        <ul class="howto">
+          <li>Be van kapcsolva a konzol, és a kártya HDMI-bemenetére csatlakozik?</li>
+          <li>Ha a kártya saját programja (pl. AVerMedia RECentral) vagy az OBS kizárólagosan használja a kártyát, zárd be őket.</li>
+          <li>USB-s kártyáknál a hang külön Windows-hangbemenetként is megjelenhet: válaszd azt a Hangforrás listában.</li>
+        </ul>
+      </details>
+      <details class="card">
+        <summary><h2>OBS-sel használnád? (VB-CABLE)</h2></summary>
+        <p>Ha továbbra is az OBS-ben nézed vagy rögzíted a játékot, az OBS a VB-Audio Virtual Cable-re küldheti a hangot, a feliratozó pedig onnan hallgatja (Hangforrás: <code>CABLE Output</code>).</p>
+        <ol class="howto">
+          <li>Telepítsd a <a href="https://vb-audio.com/Cable/" target="_blank" rel="noopener">VB-Audio Virtual Cable</a>-t, és indítsd újra a gépet.</li>
+          <li>OBS: <b>Beállítások → Hang → Speciális → Hangfigyelő eszköz:</b> <code>CABLE Input (VB-Audio Virtual Cable)</code>.</li>
+          <li>A Hangkeverőben a capture-forrás ⋮ → <b>Speciális hangtulajdonságok</b>: a capture-forrásnál <b>„Figyelés és kimenet”</b>, az <b>Asztali hangnál „Figyelés kikapcsolása”</b>.</li>
+        </ol>
+        <p class="muted small">Az OBS-be tehető felirat címe az 5. lépésnél van.</p>
+      </details>
+      <footer class="vf"><a class="btn ghost" href="#s1">Vissza</a><a class="btn primary" href="#s3">Tovább: fordítás</a></footer>
+    </section>
+
+    <!-- ============================================================ 3. FORDÍTÁS -->
+    <section class="view" id="view-s3" hidden>
+      <header class="vh">
+        <div class="kicker">3 / 6</div>
+        <h1>Fordítás</h1>
+        <p class="sub">A beszédfelismerés a gépeden fut; csak a kész angol szöveg megy a fordítóhoz.</p>
+      </header>
+      <div class="choices" id="s3-choices">
+        <label class="choice"><input type="radio" name="translator" value="deepl" data-cfg="translator">
+          <span><b>DeepL</b> <em class="badge ok">ajánlott</em><small>A legjobb minőség, kontextussal. Ingyenes kulcs, havi 500 000 karakter.</small></span></label>
+        <label class="choice"><input type="radio" name="translator" value="ollama" data-cfg="translator">
+          <span><b>Helyi AI (Ollama)</b><small>Ingyenes, a gépeden fut (pl. translategemma:12b). Kell hozzá az Ollama.</small></span></label>
+        <label class="choice"><input type="radio" name="translator" value="google" data-cfg="translator">
+          <span><b>Google</b><small>Ingyenes, kulcs nélkül megy; nem hivatalos végpont, kontextust nem kap.</small></span></label>
+      </div>
+
+      <div class="card" id="s3-deepl">
+        <div class="card-head"><h2>DeepL-kulcs</h2><span class="badge" id="s3-key-badge">nincs kulcs</span></div>
+        <p id="s3-key-info" class="muted">Még nincs kulcs beállítva.</p>
+        <div class="quota" id="s3-quota" hidden><div class="quota-fill"></div></div>
+        <label class="field"><span>Új kulcs beillesztése (Ctrl+V)</span>
+          <div class="inline">
+            <input type="password" id="s3-key" autocomplete="off" spellcheck="false" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx">
+            <button class="btn primary small" id="s3-key-save" type="button">Ellenőrzés és mentés</button>
+          </div>
+        </label>
+        <p class="muted small">1. Regisztrálj a DeepL API Free csomagra: <a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener">deepl.com/pro-api</a> (a DeepL bankkártyás azonosítást kér, de nem terhel). 2. Másold ki a kulcsot: <a href="https://www.deepl.com/your-account/keys" target="_blank" rel="noopener">deepl.com/your-account/keys</a>. A kulcs a felhasználói mappádba kerül, nem a projektmappába.</p>
+      </div>
+
+      <div class="card" id="s3-ollama" hidden>
+        <h2>Helyi AI (Ollama)</h2>
+        <p class="muted" id="s3-ollama-info">Telepítsd az Ollamát (<a href="https://ollama.com" target="_blank" rel="noopener">ollama.com</a>), majd töltsd le a fordítómodellt: <code>ollama pull translategemma:12b</code></p>
+        <div class="grid2 tight">
+          <label class="field"><span>Modell</span><input type="text" data-cfg="ollama_model"></label>
+          <label class="field"><span>Cím</span><input type="text" data-cfg="ollama_url"></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Fordítási beállítások</h2>
+        <div class="field"><span>Hangnem</span>
+          <div class="seg">
+            <label><input type="radio" name="formality" value="prefer_less" data-cfg="deepl_formality"><span>Tegező</span></label>
+            <label><input type="radio" name="formality" value="prefer_more" data-cfg="deepl_formality"><span>Magázó</span></label>
+          </div>
+        </div>
+        <label class="switch-row"><span>Tartalék fordító<small>Ha a választott fordító nem elérhető (nincs kulcs, elfogyott a keret, nincs net a DeepL felé), a helyi AI, végül a Google fordít, így a felirat magyar marad.</small></span>
+          <input type="checkbox" class="switch" data-cfg="translate_fallback"></label>
+        <label class="switch-row"><span>Előre fordítás<small>Gyorsabb felirat: a fordítás már a mondat lezárása előtt indul. Kicsit több DeepL-karaktert használ (a vezérlőpulton látod, mennyit).</small></span>
+          <input type="checkbox" class="switch" data-cfg="spec_translate"></label>
+      </div>
+
+      <div class="card">
+        <h2>Próbafordítás</h2>
+        <div class="inline">
+          <input type="text" id="s3-test-text" value="Get in the car, Franklin, before the cops get here!">
+          <button class="btn ghost small" id="s3-test" type="button">Fordítás</button>
+        </div>
+        <p class="result" id="s3-test-out"></p>
+      </div>
+      <footer class="vf"><a class="btn ghost" href="#s2">Vissza</a><a class="btn primary" href="#s4">Tovább: játékprofil</a></footer>
+    </section>
+
+    <!-- ============================================================ 4. JÁTÉKPROFIL -->
+    <section class="view" id="view-s4" hidden>
+      <header class="vh">
+        <div class="kicker">4 / 6</div>
+        <h1>Játékprofil</h1>
+        <p class="sub">A nevek és helyek listája segíti a felismerést, a glosszárium pedig a fordítást. Játékonként külön profilt tarthatsz.</p>
+      </header>
+      <div class="card">
+        <label class="field"><span>Profil</span>
+          <div class="inline">
+            <select id="s4-profile"></select>
+            <button class="btn ghost small" id="s4-new" type="button">Új profil</button>
+            <button class="btn ghost small" id="s4-reset" type="button">Visszaállítás</button>
+          </div>
+        </label>
+        <label class="field"><span>Név</span><input type="text" id="s4-name"></label>
+        <label class="field"><span>Nevek, helyek (vesszővel elválasztva)</span>
+          <textarea id="s4-hotwords" rows="3" placeholder="pl. Jason, Lucia, Vice City, Leonida"></textarea>
+          <small class="muted">Ezeket a felismerés jobban eltalálja. Ne legyen túl hosszú: 10–20 szó elég.</small></label>
+        <label class="field"><span>A játék neve a helyi AI-fordítónak</span>
+          <input type="text" id="s4-hint" placeholder="pl. Grand Theft Auto VI"></label>
+        <div class="field"><span>Glosszárium (angol → magyar)</span>
+          <table class="gloss"><tbody id="s4-gloss"></tbody></table>
+          <button class="btn ghost small" id="s4-gloss-add" type="button">+ Új kifejezés</button>
+          <small class="muted">Pl. <i>cops → zsaruk</i>. A DeepL csak akkor használja, ha támogatja az angol→magyar glosszáriumot (induláskor kiderül); a helyi AI mindig megkapja.</small>
+        </div>
+        <label class="switch-row"><span>Glosszárium használata a DeepL-nél</span>
+          <input type="checkbox" class="switch" data-cfg="deepl_glossary"></label>
+        <div class="btn-row"><button class="btn primary" id="s4-save" type="button">Profil mentése</button></div>
+      </div>
+      <footer class="vf"><a class="btn ghost" href="#s3">Vissza</a><a class="btn primary" href="#s5">Tovább: OBS-felirat</a></footer>
+    </section>
+
+    <!-- ============================================================ 5. MEGJELENÍTÉS -->
+    <section class="view" id="view-s5" hidden>
+      <header class="vh">
+        <div class="kicker">5 / 6</div>
+        <h1>Felirat megjelenítése</h1>
+        <p class="sub">A feliratot háromféleképpen jelenítheted meg; egyszerre többet is használhatsz.</p>
+      </header>
+      <div class="card accent">
+        <div class="card-head"><h2>Saját lejátszó <em class="badge ok">ajánlott</em></h2>
+          <button class="btn primary small" id="s5-player" type="button">Lejátszó megnyitása</button></div>
+        <p class="muted">A kártya képe egy saját ablakban, rajta a felirat. Teljes képernyő: F vagy dupla kattintás. A vezérlők egérmozdításra jelennek meg.</p>
+        <label class="switch-row"><span>Mindig legfelül<small>A lejátszó minden más ablak fölött marad (a vezérlősávon is ki-be kapcsolható).</small></span>
+          <input type="checkbox" class="switch" data-cfg="player_topmost"></label>
+      </div>
+      <div class="card">
+        <h2>Átlátszó felirat-réteg</h2>
+        <p class="muted">Csak a felirat, átlátszó sávként a képernyő alján, minden ablak fölött, átkattintható. Akkor jó, ha a képet más programban nézed (pl. a kártya saját programjában), vagy PC-s játékhoz.</p>
+        <label class="switch-row"><span>Felirat-réteg bekapcsolása</span>
+          <input type="checkbox" class="switch" data-cfg="screen_overlay"></label>
+        <label class="field narrow"><span>Monitor (0 = az első)</span><input type="number" min="0" max="8" data-cfg="overlay_screen"></label>
+      </div>
+      <details class="card">
+        <summary><h2>OBS böngészőforrás (nem kötelező)</h2></summary>
+        <label class="field"><span>A böngészőforrás webcíme</span>
+          <div class="inline">
+            <input type="text" id="s5-url" readonly>
+            <button class="btn primary small" id="s5-copy" type="button">Másolás</button>
+          </div>
+        </label>
+        <ol class="howto">
+          <li>Az OBS-ben a <b>Források</b> alatt: <b>+ → Böngésző</b>.</li>
+          <li>A <b>„Helyi fájl”</b> legyen kikapcsolva, a <b>Webcím</b> a fenti cím, a méret <b>1920 × 1080</b>.</li>
+          <li>A forrás a lista <b>tetején</b> legyen, a játékkép fölött.</li>
+        </ol>
+        <p class="muted small">Ha az OBS naplójában <code>CEF failed to initialize</code> áll, zárd be teljesen az OBS-t, és indítsd újra.</p>
+      </details>
+      <div class="card">
+        <h2>Kinézet</h2>
+        <div class="preview" id="s5-preview"><iframe id="s5-frame" title="Felirat előnézet" tabindex="-1"></iframe></div>
+        <div class="style-grid">
+          <label class="field"><span>Betűméret <output id="o-size"></output></span>
+            <input type="range" min="20" max="72" step="1" data-style="font_size" data-out="o-size" data-unit=" px"></label>
+          <div class="field"><span>Szín</span>
+            <div class="swatches">
+              <button type="button" class="sw" data-color="#ffff00" style="--c:#ffff00" aria-label="sárga"></button>
+              <button type="button" class="sw" data-color="#ffffff" style="--c:#ffffff" aria-label="fehér"></button>
+              <button type="button" class="sw" data-color="#ffe066" style="--c:#ffe066" aria-label="világossárga"></button>
+              <button type="button" class="sw" data-color="#7dd3fc" style="--c:#7dd3fc" aria-label="világoskék"></button>
+              <input type="color" data-style="color" aria-label="egyéni szín">
+            </div>
+          </div>
+          <label class="field"><span>Max. szélesség <output id="o-width"></output></span>
+            <input type="range" min="800" max="1900" step="20" data-style="max_width" data-out="o-width" data-unit=" px"></label>
+          <label class="field"><span>Távolság a kép aljától <output id="o-bottom"></output></span>
+            <input type="range" min="0" max="300" step="5" data-style="bottom" data-out="o-bottom" data-unit=" px"></label>
+          <label class="switch-row"><span>Háttérdoboz a szöveg mögött<small>Világos jeleneteknél olvashatóbb.</small></span>
+            <input type="checkbox" class="switch" data-style="box"></label>
+          <label class="field"><span>A doboz átlátszatlansága <output id="o-op"></output></span>
+            <input type="range" min="0.1" max="0.9" step="0.05" data-style="box_opacity" data-out="o-op" data-unit="" data-pct="1"></label>
+          <div class="field"><span>Egyszerre látható mondatok</span>
+            <div class="seg">
+              <label><input type="radio" name="maxlines" value="1" data-cfg="max_lines"><span>1</span></label>
+              <label><input type="radio" name="maxlines" value="2" data-cfg="max_lines"><span>2</span></label>
+              <label><input type="radio" name="maxlines" value="3" data-cfg="max_lines"><span>3</span></label>
+            </div>
+          </div>
+          <label class="switch-row"><span>Angol szöveg is a magyar alatt</span>
+            <input type="checkbox" class="switch" data-cfg="show_en_under_hu"></label>
+          <label class="switch-row"><span>Élő angol előnézet beszéd közben<small>Szürkén, amíg a mondat el nem készül. Kicsit több GPU-munka.</small></span>
+            <input type="checkbox" class="switch" data-cfg="show_partial_en"></label>
+        </div>
+        <div class="btn-row"><button class="btn ghost small" id="s5-default" type="button">Alapértelmezett kinézet</button></div>
+      </div>
+      <footer class="vf"><a class="btn ghost" href="#s4">Vissza</a><a class="btn primary" href="#s6">Tovább: próba</a></footer>
+    </section>
+
+    <!-- ============================================================ 6. PRÓBA -->
+    <section class="view" id="view-s6" hidden>
+      <header class="vh">
+        <div class="kicker">6 / 6</div>
+        <h1>Próba és indítás</h1>
+        <p class="sub">Egy rövid angol felvétellel kipróbálhatod a felismerést és a fordítást, Xbox nélkül is.</p>
+      </header>
+      <div class="card">
+        <div class="card-head"><h2>Próba a mintafelvétellel</h2><span class="badge" id="s6-badge"></span></div>
+        <p class="muted">Lejátszik egy kb. 12 másodperces részletet J. F. Kennedy beszédéből, és megmutatja a feliratot. Az első indítás betölti a felismerő modellt: ez 10–40 másodperc is lehet.</p>
+        <div class="btn-row"><button class="btn primary" id="s6-test" type="button">Próba indítása</button></div>
+        <ol class="steps" id="s6-steps"></ol>
+        <ul class="hist" id="s6-hist"></ul>
+      </div>
+      <div class="card accent">
+        <h2>Indítás</h2>
+        <p>Megnyílik a lejátszó a kártya képével, és elindul a feliratozás. Ezután az asztali ikon is rögtön így indul; a beállításokhoz a lejátszó fogaskerék-gombjával jutsz vissza.</p>
+        <div class="btn-row"><button class="btn primary big" id="s6-live" type="button">Lejátszó és feliratozás indítása</button></div>
+      </div>
+      <footer class="vf"><a class="btn ghost" href="#s5">Vissza</a><a class="btn ghost" href="#dash">Vezérlőpult</a></footer>
+    </section>
+
+    <!-- ============================================================ HALADÓ -->
+    <section class="view" id="view-adv" hidden>
+      <header class="vh">
+        <h1>Haladó beállítások</h1>
+        <p class="sub">A legtöbbször nem kell hozzájuk nyúlni. A ✱-gal jelöltek a feliratozó következő indításakor lépnek életbe.</p>
+      </header>
+      <div class="card">
+        <h2>Beszédfelismerés</h2>
+        <div class="grid2 tight">
+          <label class="field"><span>Modell ✱</span>
+            <select data-cfg="model">
+              <option value="distil-large-v3">distil-large-v3 (gyors, angolra ajánlott)</option>
+              <option value="large-v3-turbo">large-v3-turbo (többnyelvű, kicsit lassabb)</option>
+              <option value="large-v3">large-v3 (legpontosabb, leglassabb)</option>
+              <option value="medium.en">medium.en (kevés VRAM-hoz)</option>
+            </select></label>
+          <label class="field"><span>Futtatás ✱</span>
+            <select data-cfg="asr_device">
+              <option value="auto">Automatikus (GPU, ha van)</option>
+              <option value="cuda">Mindig GPU</option>
+              <option value="cpu">Mindig CPU</option>
+            </select></label>
+          <label class="field"><span>Modell CPU-n ✱</span>
+            <select data-cfg="cpu_model">
+              <option value="small.en">small.en</option>
+              <option value="base.en">base.en (gyorsabb)</option>
+              <option value="medium.en">medium.en (pontosabb, lassú)</option>
+            </select></label>
+          <label class="field"><span>Kontextus az előző mondatokból (db) ✱</span>
+            <input type="number" min="1" max="8" data-cfg="context_lines"></label>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Mondatok lezárása</h2>
+        <div class="grid2 tight">
+          <label class="field"><span>Csend a mondat végén (ms) ✱</span><input type="number" min="200" max="1500" step="10" data-cfg="end_silence_ms"></label>
+          <label class="field"><span>Korai lezárás írásjelnél (ms, 0 = ki) ✱</span><input type="number" min="0" max="1000" step="10" data-cfg="speculative_silence_ms"></label>
+          <label class="field"><span>Leghosszabb szakasz (mp) ✱</span><input type="number" min="4" max="30" step="0.5" data-cfg="max_utterance_s"></label>
+          <label class="field"><span>Legrövidebb beszéd (ms) ✱</span><input type="number" min="100" max="1000" step="10" data-cfg="min_utterance_speech_ms"></label>
+        </div>
+        <label class="switch-row"><span>Hosszú beszédnél a kész mondatok azonnal ✱</span><input type="checkbox" class="switch" data-cfg="early_commit"></label>
+      </div>
+      <div class="card">
+        <h2>Megjelenítés</h2>
+        <div class="grid2 tight">
+          <label class="field"><span>Legrövidebb kijelzés (mp)</span><input type="number" min="0.5" max="10" step="0.1" data-cfg="sub_min_s"></label>
+          <label class="field"><span>Leghosszabb kijelzés (mp)</span><input type="number" min="2" max="20" step="0.5" data-cfg="sub_max_s"></label>
+          <label class="field"><span>Olvasási tempó (karakter/mp)</span><input type="number" min="5" max="30" data-cfg="read_chars_per_s"></label>
+          <label class="field"><span>Webszerver portja (a program újraindítása után)</span><input type="number" min="1024" max="65535" data-cfg="http_port"></label>
+        </div>
+        <label class="switch-row"><span>Napló (sub_log.tsv)<small>Mondatonként angol, magyar és a késés. Helyben marad.</small></span><input type="checkbox" class="switch" data-cfg="log_enabled"></label>
+        <label class="switch-row"><span>sub.txt és sub.json írása<small>Csak a régi, fájlos OBS-feliratoldalhoz kell.</small></span><input type="checkbox" class="switch" data-cfg="write_sub_files"></label>
+        <label class="switch-row"><span>Induláskor nyisson ablakot</span><input type="checkbox" class="switch" data-cfg="open_window"></label>
+        <label class="switch-row"><span>Induláskor rögtön a lejátszó nyíljon meg<small>A beállítás befejezése után; különben ez a beállító ablak.</small></span><input type="checkbox" class="switch" data-cfg="launch_player"></label>
+        <label class="switch-row"><span>… és a feliratozás is magától induljon</span><input type="checkbox" class="switch" data-cfg="autostart"></label>
+      </div>
+      <div class="card">
+        <h2>Fájlok</h2>
+        <p class="muted small" id="adv-paths"></p>
+        <div class="btn-row">
+          <button class="btn ghost small" data-open="config" type="button">Beállítások mappája</button>
+          <button class="btn ghost small" data-open="base" type="button">Projektmappa</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="bye" id="bye" hidden><div><img src="/static/logo-128.png" alt="" width="72" height="72"><h2>A program leállt</h2><p>Ezt az ablakot bezárhatod.</p></div></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

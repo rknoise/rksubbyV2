@@ -4,3 +4,7 @@ sub.txt
 sub.json
 *.tmp
 __pycache__/
+.tools/
+.venv/
+feliratok/
+rksubby.log
