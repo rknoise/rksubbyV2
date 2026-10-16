@@ -1,0 +1,9 @@
+# rksubbyV2 - alapcsomagok
+faster-whisper>=1.2.1
+sounddevice>=0.5
+numpy
+requests
+
+# Opcionalis:
+#   PyQt5            -> beepitett felirat-ablak (--overlay), ha nem OBS-t hasznalsz
+#   deep-translator  -> regi Google-fordito (--translator google_web)

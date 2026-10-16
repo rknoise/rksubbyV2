@@ -1,0 +1,6 @@
+# helyi kimenetek es naplo (szemelyes adat: a felismert mondatok)
+sub_log.tsv
+sub.txt
+sub.json
+*.tmp
+__pycache__/
